@@ -2,11 +2,6 @@ import numpy as np
 import adi
 import matplotlib.pyplot as plt
 import time
-from datetime import datetime
-
-START_STRING = '1111100'
-STOP_STRING = '10000011'
-SLEEP_TIME = 50
 
 sample_rate = 30e6 # Hz
 center_freq = 1007e6 # Hz
@@ -53,56 +48,33 @@ samples *= 2**14 # The PlutoSDR expects samples to be between -2^14 and +2^14, n
 # sdr.tx_cyclic_buffer = True # Enable cyclic buffers
 # sdr.tx(samples) # start transmitting the samples continuelsy
 
-array = np.empty(15)
-test = ''
+array = np.empty(50)
 # Gather t samplesand display average power
-while(1):    # Clear buffer just to be safe
-
+for a in range(50):    # Clear buffer just to be safe
     for i in range (0, 10):
         raw_data = sdrx.rx()
 
-    # now = datetime.now()
-    # # Extract hundredths of a second
-    # hundredths = now.microsecond // 10000  # Convert microseconds to hundredths
-    # while hundredths % SLEEP_TIME != 0:  # Check if the hundredth is even
-    #     # Format time with hundredths of a second
-    #     # Receive samples
-
-
-    #     now = datetime.now()
-    #     hundredths = now.microsecond // 10000
-
+    # Receive samples
     rx_samples = sdrx.rx()
+    #print(rx_samples)
+
+    # Stop transmitting
+    #sdr.tx_destroy_buffer()
 
     #Calculate avegare power from received samples
-
-    # current_time = now.strftime("%H:%M:%S.") + f"{hundredths:02}"
-    # print(current_time)
     avg_power = np.mean(np.abs(rx_samples)**2)
+    print("Average Power",avg_power)
 
     avg_power_db = 10.0*np.log10(avg_power)
+
+    print("Average Power (dB)", avg_power_db)
     
-    if avg_power_db > 10:
-        bit = '1'
-        
-        
-    elif avg_power_db <=10:
-        bit= '0'
+    rssi = sdrx._ctrl.find_channel('voltage0').attrs['rssi'].value
+    print("RSSI", rssi)
+    print(a)
+    array[a] = avg_power_db
 
-    print(bit)
-    test += bit
+    time.sleep(0.1)
 
-    if  START_STRING in test:
-        print('Start sequence detected.')
-        test = ''
-    elif STOP_STRING in test:
-        print('End sequence detected.')
-        test = test[:-len(STOP_STRING)]
-        print('\n\n',test,'\n\n')
-        test = ''
-        # while(1):
-        #     pass
-
-    time.sleep(SLEEP_TIME/100)
-
-print(test)
+plt.plot(range(50),array)
+plt.show()

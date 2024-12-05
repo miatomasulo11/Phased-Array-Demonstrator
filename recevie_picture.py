@@ -1,12 +1,14 @@
 import numpy as np
-import adi
 import matplotlib.pyplot as plt
+import adi
 import time
 from datetime import datetime
 
 START_STRING = '1111100'
 STOP_STRING = '10000011'
 SLEEP_TIME = 50
+SEEN = 0
+DONE = 0
 
 sample_rate = 30e6 # Hz
 center_freq = 1007e6 # Hz
@@ -56,7 +58,7 @@ samples *= 2**14 # The PlutoSDR expects samples to be between -2^14 and +2^14, n
 array = np.empty(15)
 test = ''
 # Gather t samplesand display average power
-while(1):    # Clear buffer just to be safe
+while(DONE != 1):    # Clear buffer just to be safe
 
     for i in range (0, 10):
         raw_data = sdrx.rx()
@@ -92,17 +94,69 @@ while(1):    # Clear buffer just to be safe
     print(bit)
     test += bit
 
-    if  START_STRING in test:
+    if  START_STRING in test and SEEN == 0:
         print('Start sequence detected.')
         test = ''
-    elif STOP_STRING in test:
+        SEEN = 1
+    elif STOP_STRING in test and SEEN == 1:
         print('End sequence detected.')
         test = test[:-len(STOP_STRING)]
         print('\n\n',test,'\n\n')
-        test = ''
+        SEEN = 0
+        DONE = 1
         # while(1):
         #     pass
 
     time.sleep(SLEEP_TIME/100)
 
 print(test)
+
+#Loop through received 'test' and plot 1's as black and 0's as white
+def binary_to_pixel_plot(binary_string):
+    """
+    Converts a binary string into a 64-bit binary string, then plots it as an 8x8 pixel grid using matplotlib.
+    
+    Args:
+        binary_string (str): A string of binary digits ('0' or '1').
+    """
+    # Adjust the binary string to be exactly 64 bits long
+    if len(binary_string) > 64:
+        binary_string = binary_string[:64]  # Truncate to 64 bits
+    elif len(binary_string) < 64:
+        binary_string = binary_string.ljust(64, '0')  # Pad with zeros to make it 64 bits
+    
+    # Convert binary string to a 2D NumPy array (8x8 grid)
+    grid = np.array([int(bit) for bit in binary_string]).reshape((8, 8))
+    
+    # Plot the grid using matplotlib
+    plt.figure(figsize=(6, 6))
+    plt.imshow(grid, cmap="Greys", interpolation="nearest")
+    plt.axis("off")  # Remove axes for a cleaner look
+    plt.title("8x8 Pixel Grid", fontsize=16)
+    plt.show()
+
+
+def binary_to_pixel_plot(binary_string):
+    """
+    Converts a binary string into a 64-bit binary string, then plots it as an 8x8 pixel grid using matplotlib.
+    
+    Args:
+        binary_string (str): A string of binary digits ('0' or '1').
+    """
+    # Adjust the binary string to be exactly 64 bits long
+    if len(binary_string) > 64:
+        binary_string = binary_string[:64]  # Truncate to 64 bits
+    elif len(binary_string) < 64:
+        binary_string = binary_string.ljust(64, '0')  # Pad with zeros to make it 64 bits
+    
+    # Convert binary string to a 2D NumPy array (8x8 grid)
+    grid = np.array([int(bit) for bit in binary_string]).reshape((8, 8))
+    
+    # Plot the grid using matplotlib
+    plt.figure(figsize=(6, 6))
+    plt.imshow(grid, cmap="Greys", interpolation="nearest")
+    plt.axis("off")  # Remove axes for a cleaner look
+    plt.title("8x8 Pixel Grid", fontsize=16)
+    plt.show()
+
+binary_to_pixel_plot(test)
